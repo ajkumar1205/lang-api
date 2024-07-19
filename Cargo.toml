@@ -7,8 +7,13 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.8.0"
+dotenv = "0.15.0"
 env_logger = "0.11.3"
+libsql = "0.4.0"
+prost = "0.13.1"
 serde = "1.0.204"
+tokio = { version = "1.38.1", features = ["rt-multi-thread"] }
+tonic = "0.12.1"
 
 
 
