@@ -1,2 +1,2 @@
-mod code;
-mod auth;
+pub mod auth;
+pub mod code;

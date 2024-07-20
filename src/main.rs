@@ -2,27 +2,20 @@ mod db;
 mod functions;
 mod routes;
 mod utils;
-use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Route};
 use db::DB;
 use dotenv;
 use env_logger::Env;
 use functions::Client;
 use libsql::params;
+use routes::code::code;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 use utils::user::User;
 
-struct AppState {
-    users: Arc<Mutex<HashMap<String, User>>>,
-}
-
-struct GrpcClient {
-    client: Arc<Mutex<Client>>,
-}
-
 #[get("/")]
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello, world!")
+async fn index(client: web::Data<Arc<Mutex<Client>>>) -> impl Responder {
+    HttpResponse::Ok().body("Hello world!")
 }
 
 #[actix_web::main]
@@ -71,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let users = User::from(&mut vals).await;
             println!("{:?}", users);
             *d = users;
-            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(100)).await;
         }
     });
 
@@ -81,9 +74,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .app_data(client.clone())
             .wrap(Logger::new("%a %t %r %T"))
             .service(index)
+            .service(code)
     })
     .bind("127.0.0.1:8888")?
     .run()
     .await?;
     Ok(())
+}
+
+struct AppState {
+    users: Arc<Mutex<HashMap<String, User>>>,
+}
+
+struct GrpcClient {
+    client: Arc<Mutex<Client>>,
 }
