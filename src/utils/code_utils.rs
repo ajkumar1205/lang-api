@@ -19,7 +19,5 @@ pub enum Language {
 #[derive(Serialize)]
 pub struct CodeResponseResult {
     pub output: String,
-    pub error: bool,
-    pub edata: String,
     pub time: u64,
 }

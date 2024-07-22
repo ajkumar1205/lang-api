@@ -2,19 +2,23 @@ mod db;
 mod functions;
 mod routes;
 mod utils;
-use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Route};
+use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
+use api::{code_client::CodeClient, CodeRequest, CodeResponse};
 use db::DB;
 use dotenv;
 use env_logger::Env;
-use functions::Client;
 use libsql::params;
 use routes::code::code;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 use utils::user::User;
 
+pub mod api {
+    tonic::include_proto!("api");
+}
+
 #[get("/")]
-async fn index(client: web::Data<Arc<Mutex<Client>>>) -> impl Responder {
+async fn index() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
 }
 
@@ -33,7 +37,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         dotenv::var("MIRCOSERVICE_PORT")?
     );
 
-    let client = web::Data::new(Arc::new(Mutex::new(Client::new(adr).await?)));
+    let gclient = web::Data::new(Arc::new(Mutex::new(
+        CodeClient::connect(adr.clone())
+            .await
+            .expect("Failed to connect to the micro-service"),
+    )));
 
     let mut state = db
         .conn
@@ -71,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     HttpServer::new(move || {
         App::new()
             .app_data(app_data.clone())
-            .app_data(client.clone())
+            .app_data(gclient.clone())
             .wrap(Logger::new("%a %t %r %T"))
             .service(index)
             .service(code)
@@ -83,9 +91,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 struct AppState {
-    users: Arc<Mutex<HashMap<String, User>>>,
+    pub users: Arc<Mutex<HashMap<String, User>>>,
 }
 
-struct GrpcClient {
-    client: Arc<Mutex<Client>>,
-}
