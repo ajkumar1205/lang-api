@@ -10,31 +10,25 @@ use tonic::transport::Channel;
 pub async fn code(
     form: web::Json<CodeRequestForm>,
     client: web::Data<Arc<Mutex<CodeClient<Channel>>>>,
-) -> impl Responder {
+) -> Result<HttpResponse, actix_web::Error> {
     let mut client = client.lock().await;
+    let form = form.into_inner();
 
     let res = client
-        .post(CodeRequest {
-            code: form.code.clone(),
-            input: form.input.clone(),
-            lang: match form.language {
-                Language::C => api::Language::C as i32,
-                Language::Cpp => api::Language::Cpp as i32,
-                Language::Rust => api::Language::Rust as i32,
-            },
-        })
+        .post(CodeRequest::from(form))
         .await;
 
     match res {
         Ok(res) => {
             let response = res.into_inner();
-            return HttpResponse::Ok().json(CodeResponseResult {
+            return Ok(HttpResponse::Ok().json(CodeResponseResult {
                 output: response.body,
                 time: response.time,
-            });
+            }));
         }
         Err(e) => {
-            return HttpResponse::from_error(error::ErrorInternalServerError(e.to_string()));
+            let msg = e.message().to_string();
+            return Err(error::ErrorBadRequest(msg));
         }
     }
 }

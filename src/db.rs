@@ -25,7 +25,7 @@ impl DB {
                                 id INTEGER AUTOINCREAMENT PRIMARY KEY,
                                 token TEXT NOT NULL,
                                 email TEXT NOT NULL,
-                                verified INTEGER DEFAULT 0,
+                                verified BOOLEAN DEFAULT FALSE,
                                 requests INTEGER DEFAULT 10,
                                 remaining INTEGER DEFAULT 10000
                             )",
